@@ -128,7 +128,7 @@ build_treble() {
     esac
     lunch lineage_${TARGET}-userdebug
     make installclean
-    make -j$(nproc --all) systemimage
+    make -j$((`nproc` / 2)) systemimage
     mv $OUT/system.img ~/build-output/${TARGET}.img
     #make vndk-test-sepolicy
 }
