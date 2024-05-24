@@ -62,15 +62,11 @@ prep_build() {
     mkdir -p ~/build-output
     echo ""
 
+    repopick -t 13-taro-kalama -r -f
     repopick 321337 -r -f # Deprioritize important developer notifications
     repopick 321338 -r -f # Allow disabling important developer notifications
     repopick 321339 -r -f # Allow disabling USB notifications
     repopick 340916 -r # SystemUI: add burnIn protection
-    repopick 342860 -r # codec2: Use numClientBuffers to control the pipeline
-    repopick 342861 -r # CCodec: Control the inputs to avoid pipeline overflow
-    repopick 342862 -r # [WA] Codec2: queue a empty work to HAL to wake up allocation thread
-    repopick 342863 -r # CCodec: Use pipelineRoom only for HW decoder
-    repopick 342864 -r # codec2: Change a Info print into Verbose
 }
 
 apply_patches() {
@@ -96,6 +92,14 @@ finalize_treble() {
     git clean -fdx
     bash generate.sh lineage
     cd ../../..
+    cd treble_app
+    bash build.sh release
+    cp TrebleApp.apk ../vendor/hardware_overlay/TrebleApp/app.apk
+    cd ..
+    cd vendor/hardware_overlay
+    git add TrebleApp/app.apk
+    git commit -m "[TEMP] Up TrebleApp to $BUILD_DATE"
+    cd ../..
 }
 
 build_device() {
@@ -119,6 +123,8 @@ build_treble() {
         ("gargoyle_pocketG") TARGET=gargoyle_pocket_bgN;;
         ("gargoyle_tank") TARGET=gargoyle_tank_bvN;;
         ("gargoyle_tankG") TARGET=gargoyle_tank_bgN;;
+        ("gargoyle_jelly2e") TARGET=gargoyle_jelly2e_bvN;;
+        ("gargoyle_jelly2eG") TARGET=gargoyle_jelly2e_bgN;;
         ("ps_pocket") TARGET=privacysociety_pocket;;
         ("ps_jelly2e") TARGET=privacysociety_jelly2e;;
         ("ps_atoml") TARGET=privacysociety_atoml;;
@@ -127,9 +133,9 @@ build_treble() {
     esac
     lunch lineage_${TARGET}-userdebug
     make installclean
-    make -j$((`nproc` / 2)) systemimage
+    make -j$(lscpu -b -p=Core,Socket | grep -v '^#' | sort -u | wc -l) systemimage
     mv $OUT/system.img ~/build-output/${TARGET}.img
-    #make vndk-test-sepolicy
+   #make vndk-test-sepolicy
 }
 
 if ${NOSYNC}
